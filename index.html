@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ChatGujju AI 2C</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#10131b;color:#fff;font-family:Arial,sans-serif}
+header{background:#191e2b;padding:18px;font-size:23px;font-weight:bold;color:#7eb5ff}
+header small{display:block;font-size:12px;color:#b4bfd0;margin-top:5px}
+#settings{padding:12px;display:flex;gap:8px}
+select,button,input{border:0;border-radius:10px;padding:12px;font-size:15px}
+select{background:#272e3e;color:white;flex:1}
+button{background:#397bea;color:white;cursor:pointer}
+#chat{height:62vh;overflow:auto;padding:15px}
+.msg{padding:12px;margin:10px 0;border-radius:14px;max-width:88%;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5}
+.user{background:#285ab0;margin-left:auto}
+.bot{background:#262d3c;margin-right:auto}
+#form{position:fixed;bottom:0;left:0;right:0;background:#191e2b;padding:12px;display:flex;gap:7px}
+#text{min-width:0;flex:1;background:#30384a;color:white}
+#text::placeholder{color:#b9c1d0}
+#status{font-size:12px;color:#adb9ca;padding:0 14px 8px}
+</style>
+</head>
+<body>
+<header>🦚 ChatGujju AI 2C
+<small>તમારો ગુજરાતી AI સહાયક • Your Gujarati AI Assistant</small>
+</header>
+<div id="settings">
+<select id="lang" aria-label="Language">
+<option value="gu-IN">ગુજરાતી (Gujarati)</option>
+<option value="hi-IN">हिन्दी (Hindi)</option>
+<option value="en-US">English</option>
+</select>
+<button onclick="newChat()">New Chat</button>
+<button onclick="showHistory()">History</button>
+</div>
+<div id="chat"></div>
+<div id="status">Prototype mode • AI server abhi connect nahi hai.</div>
+<form id="form">
+<input id="text" placeholder="તમારો સંદેશ લખો..." autocomplete="off">
+<button type="button" onclick="listen()">🎙️</button>
+<button type="submit">➤</button>
+</form>
+<script>
+const chat=document.getElementById('chat');
+const input=document.getElementById('text');
+const lang=document.getElementById('lang');
+const statusBox=document.getElementById('status');
+let messages=[];
+try{messages=JSON.parse(localStorage.getItem('gujju-history')||'[]')}catch(e){}
+function save(){
+ try{localStorage.setItem('gujju-history',JSON.stringify(messages.slice(-100)))}catch(e){}
+}
+function render(){
+ chat.replaceChildren();
+ messages.forEach(m=>{
+  const d=document.createElement('div');
+  d.className='msg '+(m.role==='user'?'user':'bot');
+  d.textContent=(m.role==='user'?'તમે / You: ':'ChatGujju: ')+m.text;
+  chat.appendChild(d);
+ });
+ chat.scrollTop=chat.scrollHeight;
+}
+function reply(q){
+ const l=lang.value;
+ if(l==='gu-IN')return 'તમારો સંદેશ મળ્યો: "'+q+'"\n\nહું ChatGujju AI નો પ્રોટોટાઇપ છું. સાચા AI જવાબો માટે AI સર્વર જોડવો પડશે.';
+ if(l==='hi-IN')return 'आपका संदेश मिला: "'+q+'"\n\nमैं ChatGujju AI का प्रोटोटाइप हूँ। असली AI जवाबों के लिए AI सर्वर जोड़ना होगा।';
+ return 'Message received: "'+q+'"\n\nThis is the ChatGujju AI prototype. Connect an AI backend for real AI responses.';
+}
+document.getElementById('form').addEventListener('submit',e=>{
+ e.preventDefault();
+ const q=input.value.trim();
+ if(!q)return;
+ messages.push({role:'user',text:q});
+ messages.push({role:'bot',text:reply(q)});
+ save();render();input.value='';
+});
+function newChat(){
+ if(!confirm('Start a new chat? Your saved history will remain available.'))return;
+ messages=[];render();
+}
+function showHistory(){
+ render();
+ statusBox.textContent='Saved messages: '+messages.length+' • History is stored on this device.';
+}
+function listen(){
+ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!SR){statusBox.textContent='Speech recognition is unavailable in this browser. Type your message instead.';return}
+ const r=new SR();r.lang=lang.value;r.interimResults=false;
+ statusBox.textContent='Listening...';
+ r.onresult=e=>{input.value=e.results[0][0].transcript;statusBox.textContent='Voice input received.'};
+ r.onerror=()=>statusBox.textContent='Mic unavailable. Check browser microphone permission.';
+ r.start();
+}
+function speak(text){
+ const u=new SpeechSynthesisUtterance(text);u.lang=lang.value;
+ speechSynthesis.speak(u);
+}
+chat.addEventListener('click',e=>{
+ const m=e.target.closest('.msg');
+ if(m&&m.classList.contains('bot')){
+  const text=m.textContent.replace(/^ChatGujju: /,'');
+  speak(text);
+ }
+});
+render();
+</script>
+</body>
+</html>
